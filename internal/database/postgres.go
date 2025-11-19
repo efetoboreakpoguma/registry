@@ -79,6 +79,7 @@ func NewPostgreSQL(ctx context.Context, connectionURI string) (*PostgreSQL, erro
 	}, nil
 }
 
+//nolint:cyclop // Function builds complex SQL query with many optional filters
 func (db *PostgreSQL) ListServers(
 	ctx context.Context,
 	tx pgx.Tx,

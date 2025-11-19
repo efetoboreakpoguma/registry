@@ -44,6 +44,8 @@ type ServerVersionsInput struct {
 }
 
 // RegisterServersEndpoints registers all server-related endpoints with a custom path prefix
+//
+//nolint:cyclop // Function registers multiple endpoints with validation logic
 func RegisterServersEndpoints(api huma.API, pathPrefix string, registry service.RegistryService) {
 	// List servers endpoint
 	huma.Register(api, huma.Operation{
