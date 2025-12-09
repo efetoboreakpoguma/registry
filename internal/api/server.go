@@ -80,7 +80,6 @@ func NewServer(cfg *config.Config, registryService service.RegistryService, metr
 			RequestsPerHour:   cfg.RateLimitRequestsPerHour,
 			CleanupInterval:   10 * time.Minute,
 			SkipPaths:         []string{"/health", "/ping", "/metrics"},
-			TrustProxy:        cfg.RateLimitTrustProxy,
 			MaxVisitors:       100000,
 		}
 		rateLimiter = ratelimit.New(rateLimitConfig)

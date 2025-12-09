@@ -23,10 +23,6 @@ type Config struct {
 	CleanupInterval time.Duration
 	// SkipPaths are paths that should not be rate limited
 	SkipPaths []string
-	// TrustProxy determines if X-Forwarded-For and X-Real-IP headers should be trusted.
-	// Set to true only when running behind a trusted reverse proxy (e.g., nginx, cloud load balancer).
-	// When false, only the direct connection IP (RemoteAddr) is used, preventing IP spoofing.
-	TrustProxy bool
 	// MaxVisitors is the maximum number of visitor entries to track (memory protection).
 	// When exceeded, oldest entries are evicted. Default: 100000.
 	MaxVisitors int
@@ -39,7 +35,6 @@ func DefaultConfig() Config {
 		RequestsPerHour:   1000,
 		CleanupInterval:   10 * time.Minute,
 		SkipPaths:         []string{"/health", "/ping", "/metrics"},
-		TrustProxy:        false, // Secure default: don't trust proxy headers
 		MaxVisitors:       100000,
 	}
 }
@@ -198,32 +193,29 @@ func (rl *RateLimiter) shouldSkip(path string) bool {
 }
 
 // getClientIP extracts the client IP from the request.
-// When TrustProxy is true, it considers X-Forwarded-For and X-Real-IP headers.
-// When TrustProxy is false, only RemoteAddr is used to prevent IP spoofing.
-func (rl *RateLimiter) getClientIP(r *http.Request) string {
-	// Only trust proxy headers if explicitly configured
-	if rl.config.TrustProxy {
-		// Check X-Forwarded-For header (can contain multiple IPs)
-		if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-			// Take the first IP (original client)
-			if idx := strings.Index(xff, ","); idx != -1 {
-				xff = xff[:idx]
-			}
-			xff = strings.TrimSpace(xff)
-			if ip := validateAndNormalizeIP(xff); ip != "" {
-				return ip
-			}
+// It considers X-Forwarded-For and X-Real-IP headers for reverse proxy scenarios,
+// as the registry is deployed behind NGINX ingress with use-forwarded-headers enabled.
+func getClientIP(r *http.Request) string {
+	// Check X-Forwarded-For header (can contain multiple IPs)
+	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+		// Take the first IP (original client)
+		if idx := strings.Index(xff, ","); idx != -1 {
+			xff = xff[:idx]
 		}
-
-		// Check X-Real-IP header
-		if xri := r.Header.Get("X-Real-IP"); xri != "" {
-			if ip := validateAndNormalizeIP(strings.TrimSpace(xri)); ip != "" {
-				return ip
-			}
+		xff = strings.TrimSpace(xff)
+		if ip := validateAndNormalizeIP(xff); ip != "" {
+			return ip
 		}
 	}
 
-	// Fall back to RemoteAddr (always used when TrustProxy is false)
+	// Check X-Real-IP header
+	if xri := r.Header.Get("X-Real-IP"); xri != "" {
+		if ip := validateAndNormalizeIP(strings.TrimSpace(xri)); ip != "" {
+			return ip
+		}
+	}
+
+	// Fall back to RemoteAddr
 	ip, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
 		// RemoteAddr might not have a port
@@ -265,7 +257,7 @@ func (rl *RateLimiter) Middleware(next http.Handler) http.Handler {
 			return
 		}
 
-		ip := rl.getClientIP(r)
+		ip := getClientIP(r)
 
 		if !rl.Allow(ip) {
 			w.Header().Set("Content-Type", "application/problem+json")
