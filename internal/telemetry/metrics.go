@@ -32,6 +32,9 @@ type Metrics struct {
 
 	// Up tracks the health of the service
 	Up metric.Int64Gauge
+
+	// RateLimitedRequests tracks requests blocked by rate limiting
+	RateLimitedRequests metric.Int64Counter
 }
 
 // ShutdownFunc is a delegate that shuts down the OpenTelemetry components.
@@ -73,11 +76,20 @@ func NewMetrics(meter metric.Meter) (*Metrics, error) {
 		return nil, fmt.Errorf("failed to create service up gauge: %w", err)
 	}
 
+	rateLimited, err := meter.Int64Counter(
+		Namespace+".http.rate_limited",
+		metric.WithDescription("Total number of requests blocked by rate limiting"),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create rate limited counter: %w", err)
+	}
+
 	return &Metrics{
-		Requests:        req,
-		RequestDuration: reqDuration,
-		ErrorCount:      errCount,
-		Up:              up,
+		Requests:            req,
+		RequestDuration:     reqDuration,
+		ErrorCount:          errCount,
+		Up:                  up,
+		RateLimitedRequests: rateLimited,
 	}, nil
 }
 

@@ -81,6 +81,11 @@ func NewServer(cfg *config.Config, registryService service.RegistryService, metr
 			CleanupInterval:   10 * time.Minute,
 			SkipPaths:         []string{"/health", "/ping", "/metrics"},
 			MaxVisitors:       100000,
+			OnRateLimited: func(_ string) {
+				if metrics != nil {
+					metrics.RateLimitedRequests.Add(context.Background(), 1)
+				}
+			},
 		}
 		rateLimiter = ratelimit.New(rateLimitConfig)
 		handler = rateLimiter.Middleware(handler)

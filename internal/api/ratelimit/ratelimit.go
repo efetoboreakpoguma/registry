@@ -13,6 +13,10 @@ import (
 	"golang.org/x/time/rate"
 )
 
+// OnRateLimitedFunc is a callback invoked when a request is rate limited.
+// It receives the client IP that was blocked.
+type OnRateLimitedFunc func(ip string)
+
 // Config holds the rate limiting configuration
 type Config struct {
 	// RequestsPerMinute is the maximum number of requests allowed per minute per IP
@@ -26,6 +30,9 @@ type Config struct {
 	// MaxVisitors is the maximum number of visitor entries to track (memory protection).
 	// When exceeded, oldest entries are evicted. Default: 100000.
 	MaxVisitors int
+	// OnRateLimited is an optional callback invoked when a request is rate limited.
+	// Used for recording metrics.
+	OnRateLimited OnRateLimitedFunc
 }
 
 // DefaultConfig returns the default rate limiting configuration
@@ -260,6 +267,11 @@ func (rl *RateLimiter) Middleware(next http.Handler) http.Handler {
 		ip := getClientIP(r)
 
 		if !rl.Allow(ip) {
+			// Record the rate-limited request if callback is configured
+			if rl.config.OnRateLimited != nil {
+				rl.config.OnRateLimited(ip)
+			}
+
 			w.Header().Set("Content-Type", "application/problem+json")
 			w.Header().Set("Retry-After", "60")
 			w.WriteHeader(http.StatusTooManyRequests)

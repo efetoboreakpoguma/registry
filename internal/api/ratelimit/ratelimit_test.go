@@ -419,3 +419,66 @@ func TestDefaultConfig(t *testing.T) {
 		t.Errorf("missing skip paths: %v", expectedSkipPaths)
 	}
 }
+
+func TestOnRateLimitedCallback(t *testing.T) {
+	var callbackCount int
+	var lastIP string
+
+	cfg := ratelimit.Config{
+		RequestsPerMinute: 1,
+		RequestsPerHour:   100,
+		CleanupInterval:   time.Hour,
+		SkipPaths:         []string{},
+		MaxVisitors:       1000,
+		OnRateLimited: func(ip string) {
+			callbackCount++
+			lastIP = ip
+		},
+	}
+	rl := ratelimit.New(cfg)
+	defer rl.Stop()
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	middleware := rl.Middleware(handler)
+
+	// First request should succeed, no callback
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	req.RemoteAddr = "192.168.1.100:12345"
+	w := httptest.NewRecorder()
+	middleware.ServeHTTP(w, req)
+
+	if callbackCount != 0 {
+		t.Errorf("callback should not be called on allowed request, got %d calls", callbackCount)
+	}
+
+	// Second request should be blocked, callback should fire
+	req2 := httptest.NewRequest(http.MethodGet, "/test", nil)
+	req2.RemoteAddr = "192.168.1.100:12346"
+	w2 := httptest.NewRecorder()
+	middleware.ServeHTTP(w2, req2)
+
+	if w2.Code != http.StatusTooManyRequests {
+		t.Errorf("expected status %d, got %d", http.StatusTooManyRequests, w2.Code)
+	}
+
+	if callbackCount != 1 {
+		t.Errorf("callback should be called once, got %d calls", callbackCount)
+	}
+
+	if lastIP != "192.168.1.100" {
+		t.Errorf("expected IP 192.168.1.100, got %s", lastIP)
+	}
+
+	// Third request also blocked, callback should fire again
+	req3 := httptest.NewRequest(http.MethodGet, "/test", nil)
+	req3.RemoteAddr = "192.168.1.100:12347"
+	w3 := httptest.NewRecorder()
+	middleware.ServeHTTP(w3, req3)
+
+	if callbackCount != 2 {
+		t.Errorf("callback should be called twice, got %d calls", callbackCount)
+	}
+}
