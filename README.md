@@ -91,6 +91,40 @@ make publisher
 
 See [the publisher guide](./docs/modelcontextprotocol-io/quickstart.mdx) for more details.
 
+#### Configuration
+
+The registry server supports flexible configuration through multiple sources:
+
+**1. Environment variables** (with `MCP_REGISTRY_` prefix)
+```bash
+export MCP_REGISTRY_SERVER_ADDRESS=":8080"
+export MCP_REGISTRY_DATABASE_URL="postgres://localhost:5432/mcp-registry"
+./bin/registry serve
+```
+
+**2. YAML configuration file**
+```bash
+# Create registry.yaml
+cat > registry.yaml <<EOF
+server:
+  address: ":8080"
+database:
+  url: "postgres://localhost:5432/mcp-registry"
+EOF
+
+# Run with config file
+./bin/registry serve --config registry.yaml
+```
+
+**3. Command-line flags**
+```bash
+./bin/registry serve --server-address=":8080" --database-url="postgres://..."
+```
+
+**Configuration precedence:** Flags > Environment variables > Config file > Defaults
+
+See [docs/config-file.md](./docs/config-file.md) for complete configuration reference and [.env.example](./.env.example) for all available options.
+
 #### Other commands
 
 ```bash
