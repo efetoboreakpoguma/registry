@@ -15,6 +15,7 @@ type Config struct {
 	GithubClientSecret       string `env:"GITHUB_CLIENT_SECRET" envDefault:""`
 	JWTPrivateKey            string `env:"JWT_PRIVATE_KEY" envDefault:""`
 	EnableAnonymousAuth      bool   `env:"ENABLE_ANONYMOUS_AUTH" envDefault:"false"`
+	EnableGitHubOIDC         bool   `env:"ENABLE_GITHUB_OIDC" envDefault:"true"`
 	EnableRegistryValidation bool   `env:"ENABLE_REGISTRY_VALIDATION" envDefault:"true"`
 
 	// OIDC Configuration
