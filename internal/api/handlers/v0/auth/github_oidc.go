@@ -228,6 +228,10 @@ func (h *GitHubOIDCHandler) SetValidator(validator OIDCValidator) {
 
 // RegisterGitHubOIDCEndpoint registers the GitHub OIDC authentication endpoint
 func RegisterGitHubOIDCEndpoint(api huma.API, pathPrefix string, cfg *config.Config) {
+	if !cfg.EnableGitHubOIDC {
+		return
+	}
+
 	handler := NewGitHubOIDCHandler(cfg)
 
 	// GitHub OIDC token exchange endpoint

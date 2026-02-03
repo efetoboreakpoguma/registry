@@ -52,7 +52,7 @@ Example: `GET /v0.1/servers?search=filesystem&updated_since=2025-08-01T00:00:00Z
 - POST `/v0.1/auth/dns` - Exchange signed DNS challenge for auth token
 - POST `/v0.1/auth/http` - Exchange signed HTTP challenge for auth token
 - POST `/v0.1/auth/github-at` - Exchange GitHub access token for auth token
-- POST `/v0.1/auth/github-oidc` - Exchange GitHub OIDC token for auth token
+- POST `/v0.1/auth/github-oidc` - Exchange GitHub OIDC token for auth token (can be disabled via `MCP_REGISTRY_ENABLE_GITHUB_OIDC=false`)
 - POST `/v0.1/auth/oidc` - Exchange Google OIDC token for auth token (for admins)
 
 #### Admin endpoints

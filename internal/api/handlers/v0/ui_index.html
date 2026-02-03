@@ -94,48 +94,12 @@
                 <div>
                     Built in the open by <a href="https://github.com/modelcontextprotocol/registry" target="_blank" class="text-blue-600 hover:underline">MCP contributors</a>
                 </div>
-                <button id="debug-btn" class="text-blue-600 hover:underline">
-                    Server: <span id="server-name">Production</span> (<span id="version-info">...</span>)
-                </button>
+                <div>
+                    Version: <span id="version-info">...</span>
+                </div>
             </div>
         </div>
     </footer>
-
-    <!-- Debug Modal -->
-    <div id="debug-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 class="text-lg font-semibold mb-4">API Base URL</h3>
-            <div class="space-y-2 mb-4">
-                <label class="flex items-center">
-                    <input type="radio" name="baseUrl" value="prod" class="mr-2" checked>
-                    <span>Production (registry.modelcontextprotocol.io)</span>
-                </label>
-                <label class="flex items-center">
-                    <input type="radio" name="baseUrl" value="staging" class="mr-2">
-                    <span>Staging (staging.registry.modelcontextprotocol.io)</span>
-                </label>
-                <label class="flex items-center">
-                    <input type="radio" name="baseUrl" value="local" class="mr-2">
-                    <span>Local (localhost:8080)</span>
-                </label>
-                <label class="flex items-center">
-                    <input type="radio" name="baseUrl" value="custom" class="mr-2">
-                    <span>Custom</span>
-                </label>
-                <input
-                    type="text"
-                    id="custom-url"
-                    placeholder="https://custom-url.com"
-                    class="w-full px-3 py-2 border rounded disabled:bg-gray-100"
-                    disabled
-                >
-            </div>
-            <div class="flex gap-2 justify-end">
-                <button id="debug-cancel" class="px-4 py-2 text-sm border rounded hover:bg-gray-50">Cancel</button>
-                <button id="debug-apply" class="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700">Apply</button>
-            </div>
-        </div>
-    </div>
 
     <script>
         let servers = [];
@@ -143,49 +107,7 @@
         let currentCursor = null;
         let nextCursor = null;
         let searchTimeout = null;
-        let baseUrl = '';
-
-        // Get base URL based on selection
-        function getBaseUrl() {
-            const selection = localStorage.getItem('baseUrl') || 'local';
-            const customUrl = localStorage.getItem('customUrl') || '';
-
-            switch (selection) {
-                case 'prod':
-                    return 'https://registry.modelcontextprotocol.io';
-                case 'staging':
-                    return 'https://staging.registry.modelcontextprotocol.io';
-                case 'local':
-                    return '';
-                case 'custom':
-                    return customUrl;
-                default:
-                    return '';
-            }
-        }
-
-        // Get server display name
-        function getServerName() {
-            const selection = localStorage.getItem('baseUrl') || 'local';
-            const customUrl = localStorage.getItem('customUrl') || '';
-
-            switch (selection) {
-                case 'prod':
-                    return 'Production';
-                case 'staging':
-                    return 'Staging';
-                case 'local':
-                    return 'Local';
-                case 'custom':
-                    return 'Custom';
-                default:
-                    return 'Production';
-            }
-        }
-
-        // Initialize base URL and server name
-        baseUrl = getBaseUrl();
-        document.getElementById('server-name').textContent = getServerName();
+        const baseUrl = '';
 
         // URL parameter management
         function updateURL() {
@@ -216,33 +138,6 @@
                 document.getElementById('latest-only').checked = event.state.latestOnly !== false;
                 fetchServers(currentCursor, event.state.search, event.state.latestOnly);
             }
-        });
-
-        // Debug modal handlers
-        document.getElementById('debug-btn').addEventListener('click', () => {
-            const selection = localStorage.getItem('baseUrl') || 'prod';
-            document.querySelector(`input[name="baseUrl"][value="${selection}"]`).checked = true;
-            document.getElementById('custom-url').value = localStorage.getItem('customUrl') || '';
-            document.getElementById('custom-url').disabled = selection !== 'custom';
-            document.getElementById('debug-modal').classList.remove('hidden');
-        });
-
-        document.getElementById('debug-cancel').addEventListener('click', () => {
-            document.getElementById('debug-modal').classList.add('hidden');
-        });
-
-        document.getElementById('debug-apply').addEventListener('click', () => {
-            const selection = document.querySelector('input[name="baseUrl"]:checked').value;
-            const customUrl = document.getElementById('custom-url').value;
-            localStorage.setItem('baseUrl', selection);
-            localStorage.setItem('customUrl', customUrl);
-            location.reload();
-        });
-
-        document.querySelectorAll('input[name="baseUrl"]').forEach(radio => {
-            radio.addEventListener('change', (e) => {
-                document.getElementById('custom-url').disabled = e.target.value !== 'custom';
-            });
         });
 
         // Fetch version info
